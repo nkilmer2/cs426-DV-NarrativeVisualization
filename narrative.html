@@ -1,0 +1,341 @@
+<html>
+<script src='https://d3js.org/d3.v5.min.js'></script>
+<!-- <script src="https://unpkg.com/d3-array@1"></script>
+<script src="https://unpkg.com/d3-collection@1"></script>
+<script src="https://unpkg.com/d3-path@1"></script>
+<script src="https://unpkg.com/d3-shape@1"></script>
+<script src="https://unpkg.com/d3-sankey@0"></script> -->
+
+<style> 
+	circle {fill: lightblue; stroke: black;} 
+	.myBody {
+		height: 100%;
+		width: 100%;
+	}
+
+	.chart {
+		width: 90%;
+		height: 90%;
+	}
+
+	form {
+		display: block;
+		margin-top:0px;
+	}
+
+	.tooltip {	
+	    position: absolute;			
+	    text-align: center;			
+	    width: 60px;					
+	    height: 28px;					
+	    padding: 2px;				
+	    font: 12px sans-serif;		
+	    background: lightsteelblue;	
+	    border: 0px;		
+	    border-radius: 8px;			
+	    pointer-events: none;			
+	}
+
+	.dot {
+	  height: 15px;
+	  width: 15px;
+	  background-color: #bbb;
+	  border-radius: 50%;
+	  display: inline-block;
+	  
+	}
+
+	.dot.pinkdot {
+		background-color: #fc74e6;
+	}
+
+	.dot.bluedot {
+		background-color: #4287f5;
+	}
+
+	.form-container {
+		display: inline-block;	
+		padding: 5px;
+		border: 1px solid black;
+	}
+
+	.title {
+		padding-top: 10px;
+	}
+
+	.header {
+		display: flex;
+		justify-content:space-between;
+	}
+
+	.legend {
+		display: inline-block;
+		border: 1px solid black;
+		position: relative;
+		margin-right: 250px;
+		padding: 5px;
+	}
+
+	.description {
+		word-wrap: break-word;
+		white-space: pre;
+	}
+
+</style>
+
+<html>
+<body class='myBody' onload='init()'>
+	<h1 class="title">Education in the United states (in thousands)</h1>
+	<div class="header">
+		<div class="form-container">
+			<div>Step Through the Decades:</div>
+	        <!-- <label for="year">Please select a year: </label> -->
+	        <input class="date-picker" type="range" min=1940 max=2020 step=10 id="year" value=1940>
+		    <button id="prev-button" class="prev-button">Prev</button>	
+		    <button id="next-button" class="next-button">Next</button>
+		    <div>
+		    	<label>Current Decade:</label>
+	        	<label name="selected_year" id="selected_year">1940</label>
+	        </div>
+		</div>
+	    <div class="legend">
+	    	<div>Legend</div>
+	    	<div class="dot pinkdot"></div>
+	    	<span>Female</span>
+	    	<div class="dot bluedot"></div>
+	    	<span>Male</span>
+	    </div>
+	</div>
+	<p id="description" class="description"></p>
+	<svg class="chart"></svg>
+	<script type="text/javascript">
+		var slider = d3.select('#year');
+		slider.on('change', function() {
+		    drawData(this.value);
+		    updateDescription(this.value);
+		    document.getElementById("selected_year").innerHTML = this.value;	
+		});
+
+		var nextButton = d3.select('#next-button');
+		nextButton.on('click', function() {
+			var selectedYear = document.getElementById("selected_year").innerHTML;
+			var newYear = selectedYear == "2020" ? "2020" : parseInt(selectedYear) + 10;
+			document.getElementById("selected_year").value = newYear;
+			document.getElementById("year").value = newYear;
+		    document.getElementById("selected_year").innerHTML = newYear;
+			drawData(newYear);
+			updateDescription(newYear);
+		});
+
+		var prevButton = d3.select('#prev-button');
+		prevButton.on('click', function() {
+			var selectedYear = document.getElementById("selected_year").innerHTML;
+			var newYear = selectedYear == "1940" ? "1940" : parseInt(selectedYear) - 10;
+			document.getElementById("selected_year").value = newYear;
+			document.getElementById("year").value = newYear;
+		    document.getElementById("selected_year").innerHTML = newYear;
+			drawData(newYear);
+			updateDescription(newYear);
+		});
+
+		dataValues = {};
+
+
+	async function init() {
+		var currentYear = 1940;
+	 
+	 	const string1940 = `key,Male,Female
+Overall,37463,37313
+Elementary 0 to 4 years,5550,4554
+Elementary 5 to 8 years,17639,16773
+High school 1 to 3 years,5333,5849
+High School 4 Years,4507,6044
+College 1 to 3 years,1824,2251
+College 4 years or more,2021,1386`;
+
+		const string1950 = `key,Male,Female
+Overall,42627,44857
+Elementary 0 to 4 years,5074,4417
+Elementary 5 to 8 years,15852,15824
+High school 1 to 3 years,6974,7843
+High School 4 Years,7511,10114
+College 1 to 3 years,2888,3358
+College 4 years or more,3008,2264`
+
+		const string1960 = `key,Male,Female
+Overall,47997,51468
+Elementary 0 to 4 years,4522,3781
+Elementary 5 to 8 years,15562,15656
+High school 1 to 3 years,8988,10151
+High School 4 Years,10175,14267
+College 1 to 3 years,4127,4620
+College 4 years or more,4626,2991`
+
+		const string1970 = `key,Male,Female
+Overall,51784,57527
+Elementary 0 to 4 years,3031,2716
+Elementary 5 to 8 years,11925,12595
+High school 1 to 3 years,8355,10327
+High School 4 Years,15571,21563
+College 1 to 3 years,5580,5584
+College 4 years or more,7321,4743`
+
+		const string1980 = `key,Male,Female
+Overall,61389,69020
+Elementary 0 to 4 years,2212,2178
+Elementary 5 to 8 years,8627,9800
+High school 1 to 3 years,8046,10040
+High School 4 Years,20080,27854
+College 1 to 3 years,9593,9786
+College 4 years or more,12832,9362`
+
+		const string1990 = `key,Male,Female
+Overall,74421,82116
+Elementary 0 to 4 years,2004,1829
+Elementary 5 to 8 years,6557,7200
+High school 1 to 3 years,8000,9462
+High School 4 Years,26426,33693
+College 1 to 3 years,13271,14806
+College 4 years or more,18164,15126`
+
+		const string2000 = `key,Male,Female
+Overall,83611,91620
+Elementary 0 to 4 years,1341,1400
+Elementary 5 to 8 years,4577,4861
+High school 1 to 3 years,7298,8378
+High School 4 Years,26651,31435
+College 1 to 3 years,20493,23953
+College 4 years or more,23252,21594`
+
+		const string2010 = `key,Male,Female
+Overall,96325,103603
+Elementary 0 to 4 years,1279,1336
+Elementary 5 to 8 years,3931,3904
+High school 1 to 3 years,7705,7555
+High School 4 Years,30682,31774
+College 1 to 3 years,23570,28350
+College 4 years or more,29158,30683`
+
+		const string2020 = `key,Male,Female
+Overall,107517,115540
+Elementary 0 to 4 years,1053,1053
+Elementary 5 to 8 years,2854,2935
+High school 1 to 3 years,6250,6063
+High School 4 Years,31355,30243
+College 1 to 3 years,26580,30972
+College 4 years or more,39426,44275`
+
+		const data1940 = await d3.csvParse(string1940);
+		const data1950 = await d3.csvParse(string1950);
+		const data1960 = await d3.csvParse(string1960);
+		const data1970 = await d3.csvParse(string1970);
+		const data1980 = await d3.csvParse(string1980);
+		const data1990 = await d3.csvParse(string1990);
+		const data2000 = await d3.csvParse(string2000);
+		const data2010 = await d3.csvParse(string2010);
+		const data2020 = await d3.csvParse(string2020);
+		dataValues[1940] = data1940;
+		dataValues[1950] = data1950;
+		dataValues[1960] = data1960;
+		dataValues[1970] = data1970;
+		dataValues[1980] = data1980;
+		dataValues[1990] = data1990;
+		dataValues[2000] = data2000;
+		dataValues[2010] = data2010;
+		dataValues[2020] = data2020;
+
+		drawData(currentYear)
+	}
+
+	function updateDescription(currentYear) {
+		var newDesc = "";
+		if (currentYear == 1940) {
+			newDesc = "";
+		} else if (currentYear == 1950) {
+			newDesc = ""
+		} else if (currentYear == 1960) {
+			newDesc = "1963: JFK signs the Equal Pay Act, prohibiting any wage descrimination between men and women for performing the same job."
+			newDesc += "\n"
+			newDesc += "1964: Lyndon B Johnson signs the Civil Rights Act, banning employment descrimination based on gender, race, religion, or national origin"
+		} else if (currentYear == 1970) {
+			newDesc = "1972: Title IX is signed regarding Education. It prohibits any descrimination within the education system based on gender."
+		} else if (currentYear == 1980) {
+			newDesc = "1981: Sandra Day O’Connor becomes the first women is appointed to the Surpreme Court"
+		} else if (currentYear == 1990) {
+			newDesc = "1994: Clinton signs the Violence Against Women Act"
+		} else if (currentYear == 2000) {
+			newDesc = "2007: Nancy Pelosi is the first female speaker of the house"
+		}
+		document.getElementById("description").innerHTML = newDesc;
+
+	}
+
+	function drawData(currentYear) {
+		d3.selectAll("svg > *").remove();
+
+		var width = window.innerWidth -200	;
+	    var height = window.innerHeight - 300;
+	    var margin = 50;
+
+		var t = d3.transition().duration(1000);
+
+
+		var data = dataValues[currentYear]
+		var rows = ["Overall","Elementary 0 to 4 years","Elementary 5 to 8 years","High school 1 to 3 years","High School 4 Years","College 1 to 3 years","College 4 years or more"] //Also Year, median
+
+		var x = d3.scaleBand().domain(rows).range([0, width]).padding(0.2);
+		var y = d3.scaleLinear().domain([0, d3.max(data, function(d) { return parseInt(d.Male) + parseInt(d.Female); })]).range([height, 0])
+		var colors = d3.scaleQuantile().domain([0,1]).range(["#4287f5", "#fc74e6"]);
+
+
+		var tool = d3.select("body").append("div")	
+		    .attr("class", "tooltip")				
+		    .style("opacity", 0);
+
+		var g = d3.select('svg')
+		     .append('g').attr('transform', 'translate(50,50)')
+
+
+		var stacked = d3.stack().keys(["Male", "Female"])(data)
+		var rects = g.selectAll("rect")
+		    .data(stacked)
+		      .enter().append("g")
+		      .attr("fill", function(d, i) { return colors(i); })
+		      .selectAll("rect")
+		      // enter a second time = loop subgroup per subgroup to add all rectangles
+		      .data(function(d) { return d; })
+			    .enter()
+			    .append("rect")
+			      .attr("x", function (d, i) { return x(d.data.key) } )
+			      .attr("y", function (d, i) { var newY = height - y(d[1]); return y(d[1]); } )
+			      .attr('height', function (d, i) { return y(d[0]) - y(d[1]); })
+				  .attr('stroke', 'black')
+				  .on("mouseover", function(d) {		
+			            tool.transition()		
+			                .duration(200)		
+			                .style("opacity", .9);		
+			            tool.html(d[1] - d[0])	
+			                .style("left", (d3.event.pageX) + "px")		
+			                .style("top", (d3.event.pageY - 28) + "px");	
+			            })					
+			        .on("mouseout", function(d) {		
+			            tool.transition()		
+			                .duration(500)		
+			                .style("opacity", 0);	
+			        })
+		rects.transition(t).attr('width', x.bandwidth())
+		    
+
+
+		d3.select('svg')
+		  .append('g').attr('transform', 'translate(50,50)')
+		.call(d3.axisLeft(y))
+		d3.select('svg')
+		  .append('g').attr('transform', 'translate(50,' + (height + 50) + ')')
+		.call(d3.axisBottom(x));
+	}
+
+	</script>
+
+</body>
+</html>
