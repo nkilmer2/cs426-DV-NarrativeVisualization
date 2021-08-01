@@ -314,6 +314,7 @@ College 4 years or more,39426,44275`
 
 	function drawData(currentYear) {
 		d3.selectAll("svg > *").remove();
+		document.getElementById('lineTitle').innerHTML = "";
 
 		var width = window.innerWidth - 350;
 	    var height = window.innerHeight - 300;
@@ -411,7 +412,7 @@ College 4 years or more,39426,44275`
 		var x = d3.scaleBand().domain(rows).range([0, width]);
 		var y = d3.scaleLinear().domain([0, 100]).range([height, 0])
 
-		var title = document.getElementById("lineTitle").innerHTML = category
+		var title = document.getElementById("lineTitle").innerHTML = category + " (% female)"
 
 		var g = d3.select('#line')
 		     .append('g').attr('transform', 'translate(50,50)');
