@@ -9,8 +9,23 @@
 	}
 
 	.chart {
-		width: 90%;
-		height: 90%;
+		height: 100%;
+		width: calc(100% - 350px);
+		left: 300px;
+		position: absolute;
+		/*margin-right: 50px;*/
+	}
+
+	.line {
+		width: 300px;
+		height: 300px;
+	}
+
+	.lineTitle {
+		padding-bottom: 0;
+	    margin-bottom: 0;
+	    margin-top: 50px;
+	    text-align: center;
 	}
 
 	form {
@@ -50,31 +65,44 @@
 	}
 
 	.form-container {
-		display: inline-block;	
+		display: block;	
 		padding: 5px;
 		border: 1px solid black;
+		position: relative;
+		width: fit-content;
 	}
 
 	.title {
 		padding-top: 10px;
 	}
 
-	.header {
-		display: flex;
-		justify-content:space-between;
-	}
-
 	.legend {
-		display: inline-block;
+		display: block;
 		border: 1px solid black;
-		position: relative;
-		margin-right: 250px;
+		position: absolute;
 		padding: 5px;
+		right: 75px;
+		top: 150px;
 	}
 
 	.description {
 		word-wrap: break-word;
-		white-space: pre;
+		white-space: pre-line;
+		width: 100%;
+	}
+	.graphContainer {
+		display: inline-block;
+		justify-content:space-between;
+		width: 100%;
+		height: 100%;
+	}
+
+	.header {
+		position: relative;
+		display:block;
+		float:left;
+		height: 100%;
+		width: 250px;
 	}
 
 </style>
@@ -82,17 +110,22 @@
 <html>
 <body class='myBody' onload='init()'>
 	<h1 class="title">Education in the United states (in thousands)</h1>
-	<div class="header">
-		<div class="form-container">
-			<div>Step Through the Decades:</div>
-	        <!-- <label for="year">Please select a year: </label> -->
-	        <input class="date-picker" type="range" min=1940 max=2020 step=10 id="year" value=1940>
-		    <button id="prev-button" class="prev-button">Prev</button>	
-		    <button id="next-button" class="next-button">Next</button>
-		    <div>
-		    	<label>Current Decade:</label>
-	        	<label name="selected_year" id="selected_year">1940</label>
-	        </div>
+	<div class="graphContainer">
+		<div class="header">
+			<div class="form-container">
+				<div>Step Through the Decades:</div>
+		        <!-- <label for="year">Please select a year: </label> -->
+		        <input class="date-picker" type="range" min=1940 max=2020 step=10 id="year" value=1940>
+			    <button id="prev-button" class="prev-button">Prev</button>	
+			    <button id="next-button" class="next-button">Next</button>
+			    <div>
+			    	<label>Current Decade:</label>
+		        	<label name="selected_year" id="selected_year">1940</label>
+		        </div>
+			</div>
+			<p id="description" class="description"></p>
+			<h5 id="lineTitle" class="lineTitle"></h5>
+	    	<svg id="line" class="line"></svg>
 		</div>
 	    <div class="legend">
 	    	<div>Legend</div>
@@ -101,9 +134,8 @@
 	    	<div class="dot bluedot"></div>
 	    	<span>Male</span>
 	    </div>
+		<svg class="chart" id="chart"></svg>
 	</div>
-	<p id="description" class="description"></p>
-	<svg class="chart"></svg>
 	<script type="text/javascript">
 		var slider = d3.select('#year');
 		slider.on('change', function() {
@@ -221,6 +253,18 @@ High School 4 Years,31355,30243
 College 1 to 3 years,26580,30972
 College 4 years or more,39426,44275`
 
+		const percentageOverall = `key,Overall,Elementary 0 to 4 years,Elementary 5 to 8 years,High school 1 to 3 years,High School 4 Years,College 1 to 3 years,College 4 years or more
+1940,49.9,45.07,48.74,52.31,57.28,55.24,40.68
+1950,51.27,46.54,49.96,52.93,57.38,53.76,42.94
+1960,51.74,45.54,50.15,53.04,58.37,52.82,39.27
+1970,52.63,47.26,51.37,55.28,58.07,50.02,39.32
+1980,52.93,49.61,53.18,55.51,58.11,50.5,42.18
+1990,52.46,47.72,52.34,54.19,56.04,52.73,45.44
+2000,52.29,51.08,51.5,53.44,54.12,53.89,48.15
+2010,51.82,51.09,49.83,49.51,50.87,54.6,51.27
+2020,51.8,50.0,50.7,49.24,49.1,53.82,52.9
+`
+
 		const data1940 = await d3.csvParse(string1940);
 		const data1950 = await d3.csvParse(string1950);
 		const data1960 = await d3.csvParse(string1960);
@@ -230,6 +274,7 @@ College 4 years or more,39426,44275`
 		const data2000 = await d3.csvParse(string2000);
 		const data2010 = await d3.csvParse(string2010);
 		const data2020 = await d3.csvParse(string2020);
+		const dataOverall = await d3.csvParse(percentageOverall);
 		dataValues[1940] = data1940;
 		dataValues[1950] = data1950;
 		dataValues[1960] = data1960;
@@ -239,6 +284,7 @@ College 4 years or more,39426,44275`
 		dataValues[2000] = data2000;
 		dataValues[2010] = data2010;
 		dataValues[2020] = data2020;
+		dataValues["overall"] = dataOverall
 
 		drawData(currentYear)
 	}
@@ -251,7 +297,7 @@ College 4 years or more,39426,44275`
 			newDesc = ""
 		} else if (currentYear == 1960) {
 			newDesc = "1963: JFK signs the Equal Pay Act, prohibiting any wage descrimination between men and women for performing the same job."
-			newDesc += "\n"
+			newDesc += "\n\n"
 			newDesc += "1964: Lyndon B Johnson signs the Civil Rights Act, banning employment descrimination based on gender, race, religion, or national origin"
 		} else if (currentYear == 1970) {
 			newDesc = "1972: Title IX is signed regarding Education. It prohibits any descrimination within the education system based on gender."
@@ -269,7 +315,7 @@ College 4 years or more,39426,44275`
 	function drawData(currentYear) {
 		d3.selectAll("svg > *").remove();
 
-		var width = window.innerWidth -200	;
+		var width = window.innerWidth - 350;
 	    var height = window.innerHeight - 300;
 	    var margin = 50;
 
@@ -288,7 +334,7 @@ College 4 years or more,39426,44275`
 		    .attr("class", "tooltip")				
 		    .style("opacity", 0);
 
-		var g = d3.select('svg')
+		var g = d3.select('#chart')
 		     .append('g').attr('transform', 'translate(50,50)')
 
 
@@ -321,7 +367,8 @@ College 4 years or more,39426,44275`
 			                .style("opacity", .9);		
 			            tool.html(newTooltip)	
 			                .style("left", (d3.event.pageX) + "px")		
-			                .style("top", (d3.event.pageY - 28) + "px");	
+			                .style("top", (d3.event.pageY - 28) + "px");
+			             drawTooltip(currentYear, d.data.key)
 			            })					
 			        .on("mouseout", function(d) {		
 			            tool.transition()		
@@ -332,10 +379,56 @@ College 4 years or more,39426,44275`
 		    
 
 
-		d3.select('svg')
+		d3.select('#chart')
 		  .append('g').attr('transform', 'translate(50,50)')
 		.call(d3.axisLeft(y))
-		d3.select('svg')
+		d3.select('#chart')
+		  .append('g').attr('transform', 'translate(50,' + (height + 50) + ')')
+		.call(d3.axisBottom(x));
+	}
+
+
+	function drawTooltip(currentYear, category) {
+		d3.selectAll("#line > *").remove();
+		if (currentYear == 1940) {
+			return;
+		}
+		var width = 200;
+	    var height = 200;
+	    var margin = 50;
+
+		var t = d3.transition().duration(1000);
+
+
+		var data = dataValues["overall"]
+		var rows = [];
+		var year = 1940;
+		while( year <= currentYear ) {
+			rows.push(year.toString());
+			year += 10;
+		}
+
+		var x = d3.scaleBand().domain(rows).range([0, width]);
+		var y = d3.scaleLinear().domain([0, 100]).range([height, 0])
+
+		var title = document.getElementById("lineTitle").innerHTML = category
+
+		var g = d3.select('#line')
+		     .append('g').attr('transform', 'translate(50,50)');
+
+		g.append("path")
+	      .datum(data)
+	      .attr("fill", "none")
+	      .attr("stroke", "steelblue")
+	      .attr("stroke-width", 1.5)
+	      .attr("d", d3.line()
+	        .x(function(d) { return x(d.key) })
+	        .y(function(d) { return y(parseInt(d[category])) })
+	        )
+	    d3.select('#line')
+		  .append('g').attr('transform', 'translate(50,50)')
+		.call(d3.axisLeft(y))
+		d3.select('#line')
 		  .append('g').attr('transform', 'translate(50,' + (height + 50) + ')')
 		.call(d3.axisBottom(x));
 	}
